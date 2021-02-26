@@ -73,14 +73,14 @@ logger = Logger.new(STDOUT, level: Logger::DEBUG)
 loop do
   BrokenWorker.perform_async
 
-  if rand(1..100) + 45 < 50
+  if rand(1..100) + 35 < 50
     sleepy = 10
     logger.debug("Schedule #{sleepy} SleepyWorkers")
 
     sleepy.times { SleepyWorker.perform_async(time: rand(60..600)) }
   end
 
-  normal = rand 3_000..7_000
+  normal = rand 3_000..10_000
   logger.debug("Schedule #{normal} NormalWorkers")
 
   normal.times do
