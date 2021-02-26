@@ -1,0 +1,76 @@
+---
+version: "3.4"
+services:
+  metrics:
+    image: strech/sidekiq-prometheus-exporter:0.1.15
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    ports:
+      - 9292:9292
+    depends_on:
+      - sidekiq
+      - redis
+
+  metrics-reader:
+    image: curlimages/curl:7.75.0
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - "while true; do curl http://metrics:9292/metrics; sleep 0.2; done"
+    depends_on:
+      - metrics
+
+  sidekiq:
+    build: ./sidekiq
+    volumes:
+      - ./sidekiq/sidekiq.rb:/sidekiq.rb
+      - ./sidekiq/sidekiq.yml:/sidekiq.yml
+    depends_on:
+      - redis
+
+  scheduler:
+    build: ./sidekiq
+    volumes:
+      - ./scheduler/loop.rb:/loop.rb
+    entrypoint: /usr/local/bin/ruby
+    command: /loop.rb
+    depends_on:
+      - sidekiq
+
+  redis:
+    image: redis:4.0.8-alpine
+    ports:
+      - 6379:6379
+
+  # --- extras ---
+  prometheus:
+    image: prom/prometheus
+    volumes:
+      - prometheus-data:/prometheus
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - 9090:9090
+    depends_on:
+      - metrics
+
+  grafana:
+    image: grafana/grafana:7.1.1
+    volumes:
+      - grafana-data:/var/lib/grafana
+    ports:
+      - 3000:3000
+    depends_on:
+      - prometheus
+
+  docker-metrics:
+    image: wywywywy/docker_stats_exporter
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - 9487:9487
+
+volumes:
+  grafana-data:
+    driver: local
+  prometheus-data:
+    driver: local

@@ -1,0 +1,8 @@
+---
+:verbose: true
+:concurrency: 20
+:queues:
+  - default
+  - broken
+  - random
+  - sleepy
